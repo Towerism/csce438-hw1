@@ -23,6 +23,7 @@ int bind_socket(int sockfd, const char* addr) {
   if (connection_result == -1) {
     std::exit(EXIT_FAILURE);
   }
+  return port;
 }
 
 void process_commands(int sockfd) {
