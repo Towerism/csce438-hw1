@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#define MAX_SOCK_BACKLOG 100
 
 // bind a socket to address, returns the port
 int bind_socket(int sockfd, const char* addr) {
@@ -24,6 +25,14 @@ int bind_socket(int sockfd, const char* addr) {
   }
 }
 
+void process_commands(int sockfd) {
+  listen(sockfd, MAX_SOCK_BACKLOG);
+  while(true) {
+    if (accept(sockfd, NULL, NULL) != -1)
+      printf("Client connected");
+  }
+}
+
 int main(int argc, char* argv[]) {
   auto master_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (master_socket == -1)
@@ -31,4 +40,5 @@ int main(int argc, char* argv[]) {
   auto addr = "127.0.0.1";
   auto port = bind_socket(master_socket, addr);
   printf("Connected at %s:%d", addr, port);
+  process_commands(master_socket);
 }
