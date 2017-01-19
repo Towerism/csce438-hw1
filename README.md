@@ -1,2 +1,2 @@
-# csce464-hw1
-CSCE 464 Homework 1
+# csce438-hw1
+CSCE 438 Homework 1
