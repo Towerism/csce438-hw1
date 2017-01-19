@@ -29,7 +29,7 @@ void process_commands(int sockfd) {
   listen(sockfd, MAX_SOCK_BACKLOG);
   while(true) {
     if (accept(sockfd, NULL, NULL) != -1) {
-      printf("Client connected");
+      printf("Client connected\n");
       fflush(stdout);
     }
   }
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     return -1;
   auto addr = "127.0.0.1";
   auto port = bind_socket(master_socket, addr);
-  printf("Connected at %s:%d", addr, port);
+  printf("Connected at %s:%d\n", addr, port);
   fflush(stdout);
   process_commands(master_socket);
 }
