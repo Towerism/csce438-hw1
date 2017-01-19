@@ -31,13 +31,15 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
     exit(EXIT_FAILURE);
   }
-
+  bool connected = false;
   for ( cn = available; cn != NULL; cn = cn->ai_next){
   int sfd = socket(cn->ai_family, cn->ai_socktype, cn->ai_protocol);
     if (sfd == -1)
         continue;
-    if (connect(sfd, cn->ai_addr, cn->ai_addrlen) != -1)
-      break;
+    if (connect(sfd, cn->ai_addr, cn->ai_addrlen) != -1){
+      connected = true;
+      break; /* Connected to socket! */
+    }
     close(sfd);
   }
 /*
@@ -52,6 +54,10 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 */
+  if ( !connected ){
+    cerr << "Failed to connect! You succcckkkkkk" << endl;
+    return 1;
+  }
   cout << "Connection established." << endl;
   cout << "Options: \n\tCREATE <name>, DELETE <name>, JOIN <name>" << endl;
   string action;
