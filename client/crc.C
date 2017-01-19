@@ -1,13 +1,45 @@
 #include "stdlib.h"
 #include <iostream>
-#include <string>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 using namespace std;
+
+#define BUFFER_LENGTH 250
+
+int connectTCP(char *host,int port){
+  struct sockaddr_in serveraddr;
+  struct hostent *hostp;
+  int sd = -1;
+  sd = socket(AF_INET, SOCK_STREAM, 0);
+
+  memset(&serveraddr, 0, sizeof(serveraddr));
+  serveraddr.sin_family = AF_INET;
+  serveraddr.sin_port = htons(port);
+  serveraddr.sin_addr.s_addr = inet_addr(host);
+
+  if( serveraddr.sin_addr.s_addr == (unsigned long)INADDR_NONE){
+    hostp = gethostbyname(host);
+    if(hostp == (struct hostent *)NULL){
+      printf("Host not found --> ");
+      return -1;
+    }
+    memcpy(&serveraddr.sin_addr, hostp->h_addr, sizeof(serveraddr.sin_addr));
+  }
+  int rc = connect(sd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
+  if (rc == -1){
+    printf("Error while trying to connect!");
+    return -1;
+  }
+  return sd;
+}
+
+
 
 int main(int argc, char* argv[]) {
   if(argc != 3){
@@ -15,52 +47,43 @@ int main(int argc, char* argv[]) {
     cerr << "Usage: crc <host name> <port number>" << endl;
     return 1;
   }
+
   int port = stoi(argv[2]);
   cout << "Attempting to connect to " << argv[1] << ":" << port << endl;
-
-  struct addrinfo *available, *cn;
-  struct addrinfo hints;
-//  memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = 0;
-  hints.ai_protocol = 0;
-
-  int s = getaddrinfo(argv[1], argv[2], &hints, &available);
-  if (s != 0){
-    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
-    exit(EXIT_FAILURE);
-  }
-  bool connected = false;
-  for ( cn = available; cn != NULL; cn = cn->ai_next){
-  int sfd = socket(cn->ai_family, cn->ai_socktype, cn->ai_protocol);
-    if (sfd == -1)
-        continue;
-    if (connect(sfd, cn->ai_addr, cn->ai_addrlen) != -1){
-      connected = true;
-      break; /* Connected to socket! */
-    }
-    close(sfd);
-  }
-/*
-  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  int sockfd = connectTCP(argv[1], port);
+  //cout << "Socket " << sockfd << " in use" << endl;
   if (sockfd == -1){
-    cerr << "Error creating a socket!" << endl;
-    return 1;
-  }
-  if (connect(sockfd,p->ai_addr, p->ai_addrlen ) == -1){
-    close(sockfd);
-    cerr << "Error connecting to server!" << endl;
-    return 1;
-  }
-*/
-  if ( !connected ){
-    cerr << "Failed to connect! You succcckkkkkk" << endl;
+    cerr << "Error connecting to provided host/port!" << endl;
     return 1;
   }
   cout << "Connection established." << endl;
   cout << "Options: \n\tCREATE <name>, DELETE <name>, JOIN <name>" << endl;
-  string action;
-  cin >> action;
+  while(true){
+  /* Continue communicating with Master Socket.
+ *   When a response for a JOIN request is received, exit loop.
+ *   Join new channel, then pass messages there.
+ * */
+    string action;
+    cin >> action;
+  
+    char buffer[BUFFER_LENGTH];
+    strcpy(buffer, action.c_str());
+    int send_result = write(sockfd, action.c_str(), sizeof(action.c_str()));
+  
+    int bytesReceived = 0;
+
+    int rec_result = read(sockfd, buffer, BUFFER_LENGTH);
+    
+    // Check if reply is a CTRL reply that lets you join a lobby
+    string s= string(buffer);
+    if (s.substr(0,4) == "CTRL"){
+
+    }
+    else{
+      cout << s << endl;
+    }
+  }
+  close(sockfd);
+ // Join chat room. Should be the same host, just a new port. 
   return 0;
 }
