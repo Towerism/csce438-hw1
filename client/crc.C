@@ -12,6 +12,7 @@
 using namespace std;
 
 #define BUFFER_LENGTH 250
+#define STDIN 0
 
 int connectTCP(char *host,int port){
   struct sockaddr_in serveraddr;
@@ -40,7 +41,7 @@ int connectTCP(char *host,int port){
   return sd;
 }
 
-
+void chatroom(char *host, int port);
 
 int main(int argc, char* argv[]) {
   if(argc != 3){
@@ -59,6 +60,7 @@ int main(int argc, char* argv[]) {
   }
   cout << "Connection established." << endl;
   cout << "Options: \n\tCREATE <name>, DELETE <name>, JOIN <name>" << endl;
+  int chatroom_port = -1;
   while(true){
   /* Continue communicating with Master Socket.
  *   When a response for a JOIN request is received, exit loop.
@@ -84,10 +86,13 @@ int main(int argc, char* argv[]) {
        // Check if reply is a CTRL reply that lets you join a lobby
        string s= string(buffer);
        if (s.substr(0,4) == "CTRL"){
-   
+ 	  // Assign chatroom_port
+          break; 
        }
        else{
          cout << s << endl;
+	close(sockfd);
+     	sockfd = connectTCP(argv[1], port);
        }
    
     }
@@ -98,5 +103,46 @@ int main(int argc, char* argv[]) {
   }
   close(sockfd);
  // Join chat room. Should be the same host, just a new port. 
+//  sockfd = connectTCP(argv[1], chatroom_port);
+  chatroom(argv[1], chatroom_port);
   return 0;
+}
+
+
+
+void chatroom(char *host, int port){
+  // Connect to chatroom
+  int sockfd = connectTCP(host, port);
+  int maxfd = (sockfd > STDIN)?sockfd:STDIN;
+  while(true){
+      // Loop while client is still connected to chatroom
+      fd_set fds;
+      FD_ZERO(&fds);
+      FD_SET( STDIN, &fds);
+      FD_SET( sockfd, &fds);
+
+      // Check who has input: stdin or socket
+      select(maxfd + 1, &fds, NULL, NULL, NULL); // No timeout, no error sockets, no write sockets
+      if(FD_ISSET(STDIN, &fds)){
+          string userInput;
+          std::getline(std::cin, userInput);
+          userInput = userInput + "\n";
+          do{
+              char buffer[BUFFER_LENGTH];
+              char control_msg[] = "TXT ";
+              int control_length = strlen(control_msg);
+              strncpy(buffer, string(control_msg + userInput).c_str(), sizeof(buffer));
+              int send_result = write(sockfd, buffer, sizeof(buffer));
+              cout << "Message: |" << buffer << "|" << endl;
+              if(userInput.length() + control_length > BUFFER_LENGTH)
+                     userInput = userInput.substr(BUFFER_LENGTH - control_length);
+	  }while(userInput.length() > BUFFER_LENGTH);
+
+      }
+      if(FD_ISSET(sockfd, &fds)){
+          char buffer[BUFFER_LENGTH];
+	  int rec_result = read(sockfd, buffer, BUFFER_LENGTH);
+          cout << buffer;
+      }
+  }
 }
