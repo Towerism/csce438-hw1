@@ -1,4 +1,5 @@
 #include "stdlib.h"
+
 #include <iostream>
 #include <string.h>
 #include <sstream>
@@ -73,6 +74,7 @@ int main(int argc, char* argv[]) {
     if(command == "CREATE" || command == "DELETE" || command == "JOIN"){
        // Send Message
        char buffer[BUFFER_LENGTH];
+       memset(buffer, 0, sizeof(buffer));
        string message_to_send = string(command + " " + name);
        strncpy(buffer, message_to_send.c_str(), sizeof(buffer));
        int send_result = write(sockfd, buffer, sizeof(buffer));
@@ -84,7 +86,7 @@ int main(int argc, char* argv[]) {
        int rec_result = read(sockfd, buffer, BUFFER_LENGTH);
     
        // Check if reply is a CTRL reply that lets you join a lobby
-       string s= string(buffer);
+       string s= string(buffer,strlen(buffer));
        
        if (s.substr(0,4) == "CTRL"){
  	  // Assign chatroom_port
@@ -109,6 +111,7 @@ int main(int argc, char* argv[]) {
   close(sockfd);
  // Join chat room. Should be the same host, just a new port. 
 //  sockfd = connectTCP(argv[1], chatroom_port);
+  system("clear");
   chatroom(argv[1], chatroom_port);
   return 0;
 }
@@ -129,24 +132,34 @@ void chatroom(char *host, int port){
       FD_SET( sockfd, &fds);
 
       // Check who has input: stdin or socket
-      select(maxfd + 1, &fds, NULL, NULL, NULL); // No timeout, no error sockets, no write sockets
+      int result  = select(maxfd + 1, &fds, NULL, NULL, NULL); // No timeout, no error sockets, no write sockets
+      if (result == -1){
+	// Some error occurred!
+	cerr << "Error with select in chatroom function!" << endl;
+        return;
+      }
       if(FD_ISSET(STDIN, &fds)){
           string userInput;
           std::getline(std::cin, userInput);
           userInput = userInput + "\n";
           do{
               char buffer[BUFFER_LENGTH];
-
+ 	      memset(buffer, 0, sizeof(buffer));
               strncpy(buffer, string(control_msg + userInput).c_str(), sizeof(buffer));
+		// Set the last character to null byte so it is a null terminated string
+	      memset(buffer + BUFFER_LENGTH-1, 0, 1);
               int send_result = write(sockfd, buffer, sizeof(buffer));
-              cout << "Message: |" << buffer << "|" << endl;
+//              cout << "Message: |" << buffer << "|" << endl;
               if(userInput.length() + control_length > BUFFER_LENGTH)
-                     userInput = userInput.substr(BUFFER_LENGTH - control_length);
-	  }while(userInput.length() > BUFFER_LENGTH);
+                     userInput = userInput.substr(BUFFER_LENGTH - control_length - 1);
+	      else
+		break;
+	  }while(true);
 
       }
       if(FD_ISSET(sockfd, &fds)){
           char buffer[BUFFER_LENGTH];
+   	  memset(buffer, 0, sizeof(buffer));
 	  int rec_result = read(sockfd, buffer, BUFFER_LENGTH);
 	  if(strncmp(buffer, control_msg, control_length) == 0){
 	      // Is a TXT message and should display
@@ -155,6 +168,7 @@ void chatroom(char *host, int port){
           else{
              // Is a CTRL message and should respond
              char buffer2[BUFFER_LENGTH];
+ 	     memset(buffer2, 0, sizeof(buffer));
              strncpy(buffer, "Keep Alive", sizeof(buffer));
              int send_result = write(sockfd, buffer, sizeof(buffer));
           }
