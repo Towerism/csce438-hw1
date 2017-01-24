@@ -1,6 +1,7 @@
 #include "server_proc.h"
 #include "chat_room.h"
 #include "socket_helpers.h"
+#include "printing.h"
 
 void process_command(int slave_socket, std::string command, std::string argument) {
   if (command == "CREATE") {
@@ -36,11 +37,9 @@ void process_commands(int master_socket) {
   listen(master_socket, MAX_SOCK_BACKLOG);
   while(true) {
     int slave_socket;
-    printf("Awaiting request\n");
-    fflush(stdout);
+    print("Awaiting request\n");
     if ((slave_socket = accept(master_socket, NULL, NULL)) != -1) {
-      printf("Client connected\n");
-      fflush(stdout);
+      print("Receiving request from client\n");
       auto request_thread = std::thread(read_command, slave_socket);
       request_thread.detach();
     }

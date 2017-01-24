@@ -3,14 +3,13 @@
 #include "common.h"
 
 struct Chat_room {
-  Chat_room(int port = 0, int socket = 0): port(port), master_socket(socket), active(true), sockets_mtx(new std::mutex) {}
-  ~Chat_room() { delete sockets_mtx; }
+  Chat_room(int port = 0, int socket = 0): port(port), master_socket(socket), active(true) {}
+  ~Chat_room() { /*delete sockets_mtx; */}
 
   int port;
   int master_socket;
   bool active;
   std::vector<int> sockets;
-  std::mutex* sockets_mtx;
 };
 
 void connect_clients_to_chat_room(int master_socket, Chat_room& chat_room);
