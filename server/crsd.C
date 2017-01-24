@@ -9,9 +9,19 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <map>
 
 #define MAX_SOCK_BACKLOG 100
 #define MAX_BUFFER_LEN 250
+#define LOCALHOST "127.0.0.1"
+
+struct Chat_room {
+  int port;
+  int master_socket;
+  std::vector<int> sockets;
+};
+
+std::map<std::string, Chat_room> chat_rooms;
 
 // bind a socket to address, returns the port
 int bind_socket(int sockfd, const char* addr) {
@@ -38,9 +48,20 @@ void write_to_socket(int socket, std::string message) {
   write(socket, response, MAX_BUFFER_LEN);
 }
 
+Chat_room create_chat_room() {
+  auto master_socket = socket(AF_INET, SOCK_STREAM, 0);
+  if (master_socket == -1)
+    return {-1};
+  auto addr = LOCALHOST;
+  auto port = bind_socket(master_socket, addr);
+  return {port, master_socket};
+}
+
 void process_command(int slave_socket, std::string command, std::string argument) {
   if (command == "CREATE") {
-    write_to_socket(slave_socket, "Creating room " + argument + "\n");
+    auto room = create_chat_room();
+    chat_rooms[argument] = room;
+    write_to_socket(slave_socket, "Room '" + argument + "' created at port " + std::to_string(room.port) + "\n");
   } else if (command == "JOIN") {
     write_to_socket(slave_socket, "Joining room " + argument + "\n");
   } else if (command == "DELETE") {
@@ -78,7 +99,7 @@ int main(int argc, char* argv[]) {
   auto master_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (master_socket == -1)
     return -1;
-  auto addr = "127.0.0.1";
+  auto addr = LOCALHOST;
   auto port = bind_socket(master_socket, addr);
   printf("Connected at %s:%d\n", addr, port);
   fflush(stdout);
