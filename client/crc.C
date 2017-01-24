@@ -1,13 +1,14 @@
 #include "stdlib.h"
 #include <iostream>
 #include <string.h>
+#include <sstream>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-
+#include <algorithm>
 using namespace std;
 
 #define BUFFER_LENGTH 250
@@ -63,24 +64,36 @@ int main(int argc, char* argv[]) {
  *   When a response for a JOIN request is received, exit loop.
  *   Join new channel, then pass messages there.
  * */
-    string action;
-    cin >> action;
-  
-    char buffer[BUFFER_LENGTH];
-    strcpy(buffer, action.c_str());
-    int send_result = write(sockfd, action.c_str(), sizeof(action.c_str()));
-  
-    int bytesReceived = 0;
+    string command, name;
+    cin >> command >> name;
+    transform(command.begin(), command.end(), command.begin(), ::toupper);
+//command = command.toupper();
+    if(command == "CREATE" || command == "DELETE" || command == "JOIN"){
+       // Send Message
+       char buffer[BUFFER_LENGTH];
+       string message_to_send = string(command + " " + name);
+       strncpy(buffer, message_to_send.c_str(), sizeof(buffer));
+       int send_result = write(sockfd, buffer, sizeof(buffer));
+	cout << "Result of sending: " << send_result << endl;
+       cout << "********    Message sent, awaiting result  *******" << endl;  
+	cout << "Message: |" << message_to_send << "|" << endl;
+       int bytesReceived = 0;
 
-    int rec_result = read(sockfd, buffer, BUFFER_LENGTH);
+       int rec_result = read(sockfd, buffer, BUFFER_LENGTH);
     
-    // Check if reply is a CTRL reply that lets you join a lobby
-    string s= string(buffer);
-    if (s.substr(0,4) == "CTRL"){
-
+       // Check if reply is a CTRL reply that lets you join a lobby
+       string s= string(buffer);
+       if (s.substr(0,4) == "CTRL"){
+   
+       }
+       else{
+         cout << s << endl;
+       }
+   
     }
     else{
-      cout << s << endl;
+       // Invalid input
+       cout << "Invalid input, please use the format specified by the options message" << endl;
     }
   }
   close(sockfd);
