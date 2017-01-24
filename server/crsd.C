@@ -4,9 +4,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <string>
+#include <cstring>
 
 #include <iostream>
 #define MAX_SOCK_BACKLOG 100
+#define MAX_BUFFER_LEN 250
 
 // bind a socket to address, returns the port
 int bind_socket(int sockfd, const char* addr) {
@@ -29,9 +32,24 @@ int bind_socket(int sockfd, const char* addr) {
 void process_commands(int sockfd) {
   listen(sockfd, MAX_SOCK_BACKLOG);
   while(true) {
-    if (accept(sockfd, NULL, NULL) != -1) {
+    int slave_socket;
+    if ((slave_socket = accept(sockfd, NULL, NULL)) != -1) {
       printf("Client connected\n");
       fflush(stdout);
+      if (fork() == 0) {
+        // read/write
+        char data[MAX_BUFFER_LEN];
+        if (read(sockfd, data, MAX_BUFFER_LEN) < 0)
+          std::exit(EXIT_FAILURE);
+        std::string command(strtok(data, " "));
+        std::string argument(strtok(nullptr, " "));
+        if (command == "CREATE") {
+          printf("Creating room %s\n", argument);
+          fflush(stdout);
+        }
+        close(slave_socket);
+      }
+
     }
   }
 }
@@ -45,4 +63,5 @@ int main(int argc, char* argv[]) {
   printf("Connected at %s:%d\n", addr, port);
   fflush(stdout);
   process_commands(master_socket);
+  close(master_socket);
 }
