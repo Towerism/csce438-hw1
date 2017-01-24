@@ -1,6 +1,6 @@
 # List the source file names here for compilation
 CRC_FILES = crc.C
-CRSD_FILES = crsd.C
+CRSD_FILES = crsd.C socket_helpers.C chat_room.C server_proc.C
 
 # Convenience variable to hold all of the files
 FILES = $(CRC_FILES) $(CRSD_FILES)
