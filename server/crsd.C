@@ -6,8 +6,10 @@
 #include <unistd.h>
 #include <string>
 #include <cstring>
-
 #include <iostream>
+#include <thread>
+#include <vector>
+
 #define MAX_SOCK_BACKLOG 100
 #define MAX_BUFFER_LEN 250
 
@@ -29,35 +31,45 @@ int bind_socket(int sockfd, const char* addr) {
   return port;
 }
 
-void process_commands(int sockfd) {
-  listen(sockfd, MAX_SOCK_BACKLOG);
+void write_to_socket(int socket, std::string message) {
+  char response[MAX_BUFFER_LEN];
+  memset(response, 0, MAX_BUFFER_LEN);
+  strncpy(response, message.c_str(), MAX_BUFFER_LEN);
+  write(socket, response, MAX_BUFFER_LEN);
+}
+
+void process_command(int slave_socket, std::string command, std::string argument) {
+  if (command == "CREATE") {
+    write_to_socket(slave_socket, "Creating room " + argument + "\n");
+  } else if (command == "JOIN") {
+    write_to_socket(slave_socket, "Joining room " + argument + "\n");
+  } else if (command == "DELETE") {
+    write_to_socket(slave_socket, "Deleting room " + argument + "\n");
+  } else  {
+    write_to_socket(slave_socket, "Unknown command " + command + "\n");
+  }
+}
+
+void read_command(int socket) {
+  char data[MAX_BUFFER_LEN];
+  if (read(socket, data, MAX_BUFFER_LEN) < 0)
+    std::exit(EXIT_FAILURE);
+  std::string command(strtok(data, " "));
+  std::string argument(strtok(nullptr, " "));
+  process_command(socket, command, argument);
+}
+
+void process_commands(int master_socket) {
+  listen(master_socket, MAX_SOCK_BACKLOG);
   while(true) {
     int slave_socket;
     printf("Awaiting request\n");
     fflush(stdout);
-    if ((slave_socket = accept(sockfd, NULL, NULL)) != -1) {
+    if ((slave_socket = accept(master_socket, NULL, NULL)) != -1) {
       printf("Client connected\n");
       fflush(stdout);
-      if (fork() == 0) {
-        // read/write
-        char data[MAX_BUFFER_LEN];
-        if (read(slave_socket, data, MAX_BUFFER_LEN) < 0)
-          std::exit(EXIT_FAILURE);
-        std::string command(strtok(data, " "));
-        std::string argument(strtok(nullptr, " "));
-        char response[MAX_BUFFER_LEN];
-        memset(response, 0, MAX_BUFFER_LEN);
-        if (command == "CREATE") {
-          std::string temp("Creating room " + argument + "\n");
-          strncpy(response, temp.c_str(), MAX_BUFFER_LEN);
-          write(slave_socket, response, MAX_BUFFER_LEN);
-        } else {
-          std::string temp("Unknown command " + command + "\n");
-          strncpy(response, temp.c_str(), MAX_BUFFER_LEN);
-          write(slave_socket, response, MAX_BUFFER_LEN); close(slave_socket);
-        }
-      }
-
+      auto request_thread = std::thread(read_command, slave_socket);
+      request_thread.detach();
     }
   }
 }
