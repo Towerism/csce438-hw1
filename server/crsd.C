@@ -9,6 +9,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <stdexcept>
 #include <map>
 
 #define MAX_SOCK_BACKLOG 100
@@ -49,24 +50,37 @@ void write_to_socket(int socket, std::string message) {
   write(socket, response, MAX_BUFFER_LEN);
 }
 
-Chat_room create_chat_room() {
+void create_chat_room(std::string name) {
   auto master_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (master_socket == -1)
-    return {-1};
+    return;
   auto addr = LOCALHOST;
   auto port = bind_socket(master_socket, addr);
-  return {port, master_socket};
+  Chat_room room = {port, master_socket};
+  chat_rooms[name] = room;
+}
+
+int delete_chat_room(std::string name) {
+  try {
+    chat_rooms.at(name);
+    chat_rooms.erase(name);
+    return 0;
+  } catch (std::out_of_range) {
+    return -1;
+  }
 }
 
 void process_command(int slave_socket, std::string command, std::string argument) {
   if (command == "CREATE") {
-    auto room = create_chat_room();
-    chat_rooms[argument] = room;
-    write_to_socket(slave_socket, "Room '" + argument + "' created at port " + std::to_string(room.port) + "\n");
+    create_chat_room(argument);
+    write_to_socket(slave_socket, "Room '" + argument + "' created" + "\n");
   } else if (command == "JOIN") {
     write_to_socket(slave_socket, "Joining room " + argument + "\n");
   } else if (command == "DELETE") {
-    write_to_socket(slave_socket, "Deleting room " + argument + "\n");
+    if (delete_chat_room(argument) < 0)
+      write_to_socket(slave_socket, "Failed to delete room " + argument + "\n");
+    else
+      write_to_socket(slave_socket, "Deleted room " + argument + "\n");
   } else  {
     write_to_socket(slave_socket, "Unknown command " + command + "\n");
   }
