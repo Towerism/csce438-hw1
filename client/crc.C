@@ -85,12 +85,17 @@ int main(int argc, char* argv[]) {
     
        // Check if reply is a CTRL reply that lets you join a lobby
        string s= string(buffer);
+       
        if (s.substr(0,4) == "CTRL"){
  	  // Assign chatroom_port
+ 	  string port_str = s.substr(5);
+	  cout << "Trying to join the chat room on port: ";
+          cout << "|" << port_str << "|" << endl;
+          chatroom_port = stoi(port_str);
           break; 
        }
        else{
-         cout << s << endl;
+         cout <<"|" << s << "|" << endl;
 	close(sockfd);
      	sockfd = connectTCP(argv[1], port);
        }
@@ -114,6 +119,8 @@ void chatroom(char *host, int port){
   // Connect to chatroom
   int sockfd = connectTCP(host, port);
   int maxfd = (sockfd > STDIN)?sockfd:STDIN;
+  char control_msg[] = "TXT ";
+  int control_length = strlen(control_msg);
   while(true){
       // Loop while client is still connected to chatroom
       fd_set fds;
@@ -129,8 +136,7 @@ void chatroom(char *host, int port){
           userInput = userInput + "\n";
           do{
               char buffer[BUFFER_LENGTH];
-              char control_msg[] = "TXT ";
-              int control_length = strlen(control_msg);
+
               strncpy(buffer, string(control_msg + userInput).c_str(), sizeof(buffer));
               int send_result = write(sockfd, buffer, sizeof(buffer));
               cout << "Message: |" << buffer << "|" << endl;
@@ -142,7 +148,16 @@ void chatroom(char *host, int port){
       if(FD_ISSET(sockfd, &fds)){
           char buffer[BUFFER_LENGTH];
 	  int rec_result = read(sockfd, buffer, BUFFER_LENGTH);
-          cout << buffer;
+	  if(strncmp(buffer, control_msg, control_length) == 0){
+	      // Is a TXT message and should display
+	      cout << buffer + control_length;
+          }
+          else{
+             // Is a CTRL message and should respond
+             char buffer2[BUFFER_LENGTH];
+             strncpy(buffer, "Keep Alive", sizeof(buffer));
+             int send_result = write(sockfd, buffer, sizeof(buffer));
+          }
       }
   }
 }
