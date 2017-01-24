@@ -33,6 +33,8 @@ void process_commands(int sockfd) {
   listen(sockfd, MAX_SOCK_BACKLOG);
   while(true) {
     int slave_socket;
+    printf("Awaiting request\n");
+    fflush(stdout);
     if ((slave_socket = accept(sockfd, NULL, NULL)) != -1) {
       printf("Client connected\n");
       fflush(stdout);
@@ -46,13 +48,14 @@ void process_commands(int sockfd) {
         char response[MAX_BUFFER_LEN];
         memset(response, 0, MAX_BUFFER_LEN);
         if (command == "CREATE") {
-          sprintf(response, "Creating room %s\n", argument);
+          std::string temp("Creating room " + argument + "\n");
+          strncpy(response, temp.c_str(), MAX_BUFFER_LEN);
           write(slave_socket, response, MAX_BUFFER_LEN);
         } else {
-          sprintf(response, "Unknown command %s\n", command);
-          write(slave_socket, response, MAX_BUFFER_LEN);
+          std::string temp("Unknown command " + command + "\n");
+          strncpy(response, temp.c_str(), MAX_BUFFER_LEN);
+          write(slave_socket, response, MAX_BUFFER_LEN); close(slave_socket);
         }
-        close(slave_socket);
       }
 
     }
