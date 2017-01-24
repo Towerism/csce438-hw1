@@ -39,13 +39,18 @@ void process_commands(int sockfd) {
       if (fork() == 0) {
         // read/write
         char data[MAX_BUFFER_LEN];
-        if (read(sockfd, data, MAX_BUFFER_LEN) < 0)
+        if (read(slave_socket, data, MAX_BUFFER_LEN) < 0)
           std::exit(EXIT_FAILURE);
         std::string command(strtok(data, " "));
         std::string argument(strtok(nullptr, " "));
+        char response[MAX_BUFFER_LEN];
+        memset(response, 0, MAX_BUFFER_LEN);
         if (command == "CREATE") {
-          printf("Creating room %s\n", argument);
-          fflush(stdout);
+          sprintf(response, "Creating room %s\n", argument);
+          write(slave_socket, response, MAX_BUFFER_LEN);
+        } else {
+          sprintf(response, "Unknown command %s\n", command);
+          write(slave_socket, response, MAX_BUFFER_LEN);
         }
         close(slave_socket);
       }
