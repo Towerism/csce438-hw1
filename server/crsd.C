@@ -13,6 +13,7 @@
 
 #define MAX_SOCK_BACKLOG 100
 #define MAX_BUFFER_LEN 250
+#define PORT_START 1024
 #define LOCALHOST "127.0.0.1"
 
 struct Chat_room {
@@ -27,7 +28,7 @@ std::map<std::string, Chat_room> chat_rooms;
 int bind_socket(int sockfd, const char* addr) {
   struct sockaddr_in addr_in;
   addr_in.sin_family = AF_INET;
-  int port = 9999;
+  int port = PORT_START;
   int connection_result = 0;
   do {
     port += 1;
@@ -73,8 +74,8 @@ void process_command(int slave_socket, std::string command, std::string argument
 
 void read_command(int socket) {
   char data[MAX_BUFFER_LEN];
-  if (read(socket, data, MAX_BUFFER_LEN) < 0)
-    std::exit(EXIT_FAILURE);
+  if (read(socket, data, MAX_BUFFER_LEN) <= 0)
+    return;
   std::string command(strtok(data, " "));
   std::string argument(strtok(nullptr, " "));
   process_command(socket, command, argument);
