@@ -1,0 +1,4 @@
+ADD usernames
+	WHY: To make it more clear who is sending which messages
+FIX typing when receiving
+	WHY: Otherwise receiving a message prints to the line you are currently on, obfuscating the message you want to send

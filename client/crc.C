@@ -42,7 +42,7 @@ int connectTCP(char *host,int port){
   return sd;
 }
 
-void chatroom(char *host, int port);
+void chatroom(char *host, int port, string name);
 
 int main(int argc, char* argv[]) {
   if(argc != 3){
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     cerr << "Usage: crc <host name> <port number>" << endl;
     return 1;
   }
-
+  string userName = "Anonymous";
   int port = stoi(argv[2]);
   cout << "Attempting to connect to " << argv[1] << ":" << port << endl;
   int sockfd = connectTCP(argv[1], port);
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   cout << "Connection established." << endl;
-  cout << "Options: \n\tCREATE <name>, DELETE <name>, JOIN <name>" << endl;
+  cout << "Options: \n\tCREATE <name>, DELETE <name>, JOIN <name>, USER <name>" << endl;
   int chatroom_port = -1;
   while(true){
   /* Continue communicating with Master Socket.
@@ -104,26 +104,31 @@ int main(int argc, char* argv[]) {
    
     }
     else{
-       // Invalid input
-       cout << "Invalid input, please use the format specified by the options message" << endl;
+ 	if (command == "USER"){
+	   userName = name;
+	}
+	else{
+	       // Invalid input
+	       cout << "Invalid input, please use the format specified by the options message" << endl;
+	}
     }
   }
   close(sockfd);
  // Join chat room. Should be the same host, just a new port. 
 //  sockfd = connectTCP(argv[1], chatroom_port);
   system("clear");
-  chatroom(argv[1], chatroom_port);
+  chatroom(argv[1], chatroom_port, userName);
   return 0;
 }
 
 
 
-void chatroom(char *host, int port){
+void chatroom(char *host, int port, string name){
   // Connect to chatroom
   int sockfd = connectTCP(host, port);
   int maxfd = (sockfd > STDIN)?sockfd:STDIN;
-  char control_msg[] = "TXT ";
-  int control_length = strlen(control_msg);
+  string control_msg = "TXT " + name + ": ";
+  int control_length = control_msg.length();
   while(true){
       // Loop while client is still connected to chatroom
       fd_set fds;
@@ -161,9 +166,9 @@ void chatroom(char *host, int port){
           char buffer[BUFFER_LENGTH];
    	  memset(buffer, 0, sizeof(buffer));
 	  int rec_result = read(sockfd, buffer, BUFFER_LENGTH);
-	  if(strncmp(buffer, control_msg, control_length) == 0){
+	  if(strncmp(buffer, "TXT ", 4) == 0){
 	      // Is a TXT message and should display
-	      cout << buffer + control_length;
+	      cout << buffer + 4;
           }
           else{
              // Is a CTRL message and should respond
