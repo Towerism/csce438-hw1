@@ -5,8 +5,10 @@
 
 void process_command(int slave_socket, std::string command, std::string argument) {
   if (command == "CREATE") {
-    create_chat_room(argument);
-    write_to_socket(slave_socket, "Room '" + argument + "' created");
+    if (create_chat_room(argument))
+      write_to_socket(slave_socket, "Room '" + argument + "' created");
+    else
+      write_to_socket(slave_socket, "FAIL Failed to create room " + argument);
   } else if (command == "JOIN") {
     auto room = get_chat_room(argument);
     auto port = room.port;
@@ -14,14 +16,14 @@ void process_command(int slave_socket, std::string command, std::string argument
     if (port >= 0)
       write_to_socket(slave_socket, "CTRL " + std::to_string(port) + " " + std::to_string(users));
     else
-      write_to_socket(slave_socket, "Failed to join room " + argument);
+      write_to_socket(slave_socket, "FAIL Failed to join room " + argument);
   } else if (command == "DELETE") {
-    if (delete_chat_room(argument) < 0)
-      write_to_socket(slave_socket, "Failed to delete room " + argument);
-    else
+    if (delete_chat_room(argument))
       write_to_socket(slave_socket, "Deleted room " + argument);
+    else
+      write_to_socket(slave_socket, "FAIL Failed to delete room " + argument);
   } else  {
-    write_to_socket(slave_socket, "Unknown command " + command);
+    write_to_socket(slave_socket, "FAIL Unknown command " + command);
   }
   close(slave_socket);
 }

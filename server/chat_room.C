@@ -38,26 +38,38 @@ void run_chat_room(Chat_room& chat_room) {
   std::thread(connect_clients_to_chat_room, chat_room.master_socket, std::ref(chat_room)).detach();
 }
 
-void create_chat_room(std::string name) {
+bool chat_room_exists(std::string name) {
+  try {
+    chat_rooms.at(name);
+    return true;
+  } catch (std::out_of_range) {
+    return false;
+  }
+}
+
+bool create_chat_room(std::string name) {
+  if (chat_room_exists(name))
+    return false;
   auto master_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (master_socket == -1)
-    return;
+    return false;
   auto addr = LOCALHOST;
   auto port = bind_socket(master_socket, addr);
   Chat_room room(port, master_socket);
   chat_rooms[name] = room;
-  run_chat_room(std::ref(chat_rooms[name]));
+  run_chat_room(chat_rooms[name]);
+  return true;
 }
 
-int delete_chat_room(std::string name) {
-  try {
-    auto room = chat_rooms.at(name);
+bool delete_chat_room(std::string name) {
+  if (chat_room_exists(name)) {
+    auto room = chat_rooms[name];
     room.active = false;
     chat_rooms.erase(name);
-    return 0;
-  } catch (std::out_of_range) {
-    return -1;
-  }
+    return true;
+  } else {
+    return false;
+ }
 }
 
 Chat_room get_chat_room(std::string name) {
