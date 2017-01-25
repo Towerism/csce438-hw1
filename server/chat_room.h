@@ -24,8 +24,7 @@ private:
 };
 
 void connect_clients_to_chat_room(int master_socket, Chat_room& chat_room);
-void handle_chat_client_outgoing(Chat_room& chat_room, int slave_socket);
-void handle_chat_client_incoming(Chat_room& chat_room, int slave_socket);
+void forward_chat_client_messages(Chat_room& chat_room, int slave_socket);
 void run_chat_room(Chat_room& chat_room);
 void create_chat_room(std::string name);
 int delete_chat_room(std::string name);

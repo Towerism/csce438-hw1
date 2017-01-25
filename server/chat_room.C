@@ -12,9 +12,7 @@ void connect_clients_to_chat_room(int master_socket, Chat_room& chat_room) {
     print("Chatroom awaiting client connection\n");
     if (slave_socket = chat_room.sockets.accept(master_socket)) {
       print("Client connected to chatroom\n");
-      std::thread(handle_chat_client_incoming,
-                  std::ref(chat_room), slave_socket).detach();
-      std::thread(handle_chat_client_outgoing,
+      std::thread(forward_chat_client_messages,
                   std::ref(chat_room), slave_socket).detach();
     } else {
       print("Problem accepting client connection to chatroom\n");
@@ -23,7 +21,7 @@ void connect_clients_to_chat_room(int master_socket, Chat_room& chat_room) {
   print("No longer connecting clients to chat room\n");
 }
 
-void handle_chat_client_outgoing(Chat_room& chat_room, int slave_socket) {
+void forward_chat_client_messages(Chat_room& chat_room, int slave_socket) {
   char data[MAX_BUFFER_LEN];
   while (true) {
     if (read(slave_socket, data, MAX_BUFFER_LEN) <= 0) {
@@ -34,13 +32,6 @@ void handle_chat_client_outgoing(Chat_room& chat_room, int slave_socket) {
     print("Forwarding message\n");
     chat_room.sockets.forward_data(slave_socket, data);
   }
-}
-
-void handle_chat_client_incoming(Chat_room& chat_room, int slave_socket) {
-  while(true) {
-    chat_room.sockets.accrue_data(slave_socket);
-  }
-  print("No longer handling incoming messages for client\n");
 }
 
 void run_chat_room(Chat_room& chat_room) {
@@ -55,7 +46,7 @@ void create_chat_room(std::string name) {
   auto port = bind_socket(master_socket, addr);
   Chat_room room(port, master_socket);
   chat_rooms[name] = room;
-  std::thread(run_chat_room, std::ref(chat_rooms[name])).detach();
+  run_chat_room(std::ref(chat_rooms[name]));
 }
 
 int delete_chat_room(std::string name) {
