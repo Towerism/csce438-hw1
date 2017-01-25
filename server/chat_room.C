@@ -48,35 +48,16 @@ void keep_client_alive(Chat_room& chat_room, int slave_socket) {
 }
 
 void handle_chat_client_outgoing(Chat_room& chat_room, int slave_socket) {
-  fd_set readfds;
-  bool sent_keepalive = false;
+  char data[MAX_BUFFER_LEN];
   while (true) {
-    FD_ZERO(&readfds);
-    FD_SET(slave_socket, &readfds);
-    struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
-    char data[MAX_BUFFER_LEN];
-    int activity = select(slave_socket + 1, &readfds, NULL, NULL, &timeout);
-    if (activity == 0) {
-      print("Sent keepalive to socket\n");
-      sent_keepalive = true;
-      write_to_socket(slave_socket, keep_alive_check);
-      continue;
-    } else if (activity == -1) {
-      print("There was an error with select processing outgoing messages");
-      break;
+    if (read(slave_socket, data, MAX_BUFFER_LEN) <= 0) {
+      chat_room.sockets.close(slave_socket);
+      print("Client disconnected\n");
+      return;
     }
-    if (FD_ISSET(slave_socket, &readfds)) {
-      if (sent_keepalive)
-        print("Client is still alive\n");
-      sent_keepalive = false;
-      if (read(slave_socket, data, MAX_BUFFER_LEN) <= 0)
-        return;
-      chat_room.sockets.forward_data(slave_socket, data);
-    }
+    print("Forwarding message\n");
+    chat_room.sockets.forward_data(slave_socket, data);
   }
-  print("No longer handling outgoing messages for client\n");
 }
 
 void handle_chat_client_incoming(Chat_room& chat_room, int slave_socket) {
