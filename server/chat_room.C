@@ -16,19 +16,19 @@ void keep_client_alive(Chat_room& chat_room, int slave_socket) {
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
     print("Waiting 1 second for keep alive response from client\n");
-    if (select(1, &readfds, NULL, NULL, &timeout) == 0) {
-      chat_room.lock();
+    select(slave_socket + 1, &readfds, NULL, NULL, &timeout);
+    if (FD_ISSET(slave_socket, &readfds)) {
+      print("Client is alive\n");
+      char data[MAX_BUFFER_LEN];
+      read(slave_socket, data, MAX_BUFFER_LEN);
+    } else {
       auto it = std::find(chat_room.sockets.begin(), chat_room.sockets.end(), slave_socket);
+      chat_room.lock();
       chat_room.sockets.erase(it);
       chat_room.unlock();
       close(slave_socket);
       print("Client disconnected\n");
       return;
-    }
-    print("Client is alive\n");
-    if (FD_ISSET(slave_socket, &readfds)) {
-      char data[MAX_BUFFER_LEN];
-      read(slave_socket, data, MAX_BUFFER_LEN);
     }
   }
 }
@@ -47,7 +47,8 @@ void connect_clients_to_chat_room(int master_socket, Chat_room& chat_room) {
                   std::ref(chat_room), slave_socket).detach();
       std::thread(handle_chat_client_outgoing,
                   std::ref(chat_room), slave_socket).detach();
-      std::thread(keep_client_alive, std::ref(chat_room), slave_socket).detach();
+      std::thread(keep_client_alive,
+                  std::ref(chat_room), slave_socket).detach();
     } else {
       print("Problem accepting client connection to chatroom\n");
     }
@@ -61,44 +62,37 @@ void handle_chat_client_outgoing(Chat_room& chat_room, int slave_socket) {
     if (read(slave_socket, data, MAX_BUFFER_LEN) <= 0)
       return;
     print("Receiving data from chatroom client\n");
-    chat_room.lock();
-    for (auto socket : chat_room.sockets) {
-      if (slave_socket == socket)
+    for (auto it = chat_room.sockets.begin(); it != chat_room.sockets.end(); ++it) {
+      if (slave_socket == *it)
         continue;
       print("Forwarding data to chatroom clients\n");
-      write(socket, data, MAX_BUFFER_LEN);
+      write(*it, data, MAX_BUFFER_LEN);
     }
-    chat_room.unlock();
   }
   print("No longer handling outgoing messages for client\n");
 }
 
 void handle_chat_client_incoming(Chat_room& chat_room, int slave_socket) {
   fd_set readfds;
+  int maxfd;
   while(true) {
     FD_ZERO(&readfds);
-    chat_room.lock();
-    for (auto socket : chat_room.sockets) {
-      if (slave_socket == socket)
+    for (auto it = chat_room.sockets.begin(); it != chat_room.sockets.end(); ++it) {
+      if (slave_socket == *it)
         continue;
-      FD_SET(socket, &readfds);
+      FD_SET(*it, &readfds);
+      maxfd = *it;
     }
-    chat_room.unlock();
     int activity;
-    chat_room.lock();
-    int nsock = chat_room.sockets.size();
-    chat_room.unlock();
-    select(nsock, &readfds, NULL, NULL, NULL);
-    chat_room.lock();
-    for (auto socket : chat_room.sockets) {
-      if (FD_ISSET(socket, &readfds)) {
+    select(maxfd + 1, &readfds, NULL, NULL, NULL);
+    for (auto it = chat_room.sockets.begin(); it != chat_room.sockets.end(); ++it) {
+      if (FD_ISSET(*it, &readfds)) {
         char data[MAX_BUFFER_LEN];
-        if (read(socket, data, MAX_BUFFER_LEN) <= 0)
+        if (read(*it, data, MAX_BUFFER_LEN) <= 0)
           return;
         write(slave_socket, data, MAX_BUFFER_LEN);
       }
     }
-    chat_room.unlock();
   }
   print("No longer handling incoming messages for client\n");
 }
