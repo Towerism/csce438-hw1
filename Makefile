@@ -31,7 +31,7 @@ DEPS = $(OBJECTS:.o=.d)
 
 # Conventional environment variables
 CXX ?= $(which g++)
-CXXFLAGS ?= -std=c++11 -ggdb
+CXXFLAGS ?= -std=c++11 -ggdb -DDEBUG_MESSAGES
 LDFLAGS ?= -pthread
 
 .DEFAULT: all

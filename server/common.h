@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <algorithm>
 #include <string>
 #include <cstring>
 #include <iostream>

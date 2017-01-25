@@ -8,9 +8,11 @@ void process_command(int slave_socket, std::string command, std::string argument
     create_chat_room(argument);
     write_to_socket(slave_socket, "Room '" + argument + "' created");
   } else if (command == "JOIN") {
-    auto port = get_chat_room_port(argument);
+    auto room = get_chat_room(argument);
+    auto port = room.port;
+    auto users = room.sockets.size();
     if (port >= 0)
-      write_to_socket(slave_socket, "CTRL " + std::to_string(port));
+      write_to_socket(slave_socket, "CTRL " + std::to_string(port) + " " + std::to_string(users));
     else
       write_to_socket(slave_socket, "Failed to join room " + argument);
   } else if (command == "DELETE") {
@@ -44,4 +46,5 @@ void process_commands(int master_socket) {
       request_thread.detach();
     }
   }
+  print("Server exiting abnormally\n");
 }
