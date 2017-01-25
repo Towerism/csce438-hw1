@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "socket_list.h"
 
 struct Chat_room {
   Chat_room(int port = 0, int socket = 0): port(port), master_socket(socket), active(true) {}
@@ -16,13 +17,7 @@ struct Chat_room {
   int port;
   int master_socket;
   std::atomic<bool> active;
-  std::vector<int> sockets;
-
-  void lock() { sock_mtx.lock(); }
-  void unlock() { sock_mtx.unlock(); }
-
-private:
-  std::mutex sock_mtx;
+  Socket_list sockets;
 };
 
 void keep_client_alive(Chat_room& chat_room, int slave_socket);
