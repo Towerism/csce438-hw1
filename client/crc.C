@@ -91,9 +91,17 @@ int main(int argc, char* argv[]) {
        if (s.substr(0,4) == "CTRL"){
  	  // Assign chatroom_port
  	  string port_str = s.substr(5);
+	  // First number is port, Second is # of people in room
+	  //    seperated by a space.
+	  auto split_location = port_str.find(" ");
+	  string port = port_str.substr(0, split_location);
+	  string user_count = port_str.substr(split_location + 1);
 	  cout << "Trying to join the chat room on port: ";
-          cout << "|" << port_str << "|" << endl;
-          chatroom_port = stoi(port_str);
+          cout << "|" << port << "|" << endl;
+          chatroom_port = stoi(port);
+	  cout << "There are currently " << user_count << " users in this chatroom." << endl;
+	  if(userName == "Anonymous")
+		userName += user_count;
           break; 
        }
        else{
@@ -116,7 +124,8 @@ int main(int argc, char* argv[]) {
   close(sockfd);
  // Join chat room. Should be the same host, just a new port. 
 //  sockfd = connectTCP(argv[1], chatroom_port);
-  system("clear");
+//  system("clear");
+  cout << "\n\n\n\n\n\n " << endl;
   chatroom(argv[1], chatroom_port, userName);
   return 0;
 }
