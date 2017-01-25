@@ -20,7 +20,6 @@ struct Chat_room {
   Socket_list sockets;
 };
 
-void keep_client_alive(Chat_room& chat_room, int slave_socket);
 void connect_clients_to_chat_room(int master_socket, Chat_room& chat_room);
 void handle_chat_client_outgoing(Chat_room& chat_room, int slave_socket);
 void handle_chat_client_incoming(Chat_room& chat_room, int slave_socket);

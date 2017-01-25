@@ -23,30 +23,6 @@ void connect_clients_to_chat_room(int master_socket, Chat_room& chat_room) {
   print("No longer connecting clients to chat room\n");
 }
 
-void keep_client_alive(Chat_room& chat_room, int slave_socket) {
-  fd_set readfds;
-  while(true) {
-    print("Sending keep alive request to client\n");
-    write_to_socket(slave_socket, keep_alive_check);
-    FD_ZERO(&readfds);
-    FD_SET(slave_socket, &readfds);
-    struct timeval timeout;
-    timeout.tv_sec = 10;
-    timeout.tv_usec = 0;
-    print("Waiting 1 second for keep alive response from client\n");
-    select(slave_socket + 1, &readfds, NULL, NULL, &timeout);
-    if (FD_ISSET(slave_socket, &readfds)) {
-      print("Client is alive\n");
-      char data[MAX_BUFFER_LEN];
-      read(slave_socket, data, MAX_BUFFER_LEN);
-    } else {
-      chat_room.sockets.close(slave_socket);
-      print("Client disconnected\n");
-      return;
-    }
-  }
-}
-
 void handle_chat_client_outgoing(Chat_room& chat_room, int slave_socket) {
   char data[MAX_BUFFER_LEN];
   while (true) {
