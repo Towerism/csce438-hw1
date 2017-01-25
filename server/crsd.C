@@ -8,8 +8,12 @@ int main(int argc, char* argv[]) {
     return -1;
   auto addr = LOCALHOST;
   auto port = bind_socket(master_socket, addr);
-  printf("Connected at %s:%d\n", addr, port);
+  printf("Chat server running at:\n\n\t %s:%d\n\n", addr, port);
+  printf("Run 'pkill %s' to kill the server.\n", argv[0]);
+  printf("Alternatively use 'ps' to get the PID\n\tand run 'pkill PID'.\n");
   fflush(stdout);
-  process_commands(master_socket);
-  close(master_socket);
+  if (fork() == 0) {
+    process_commands(master_socket);
+    close(master_socket);
+  }
 }
