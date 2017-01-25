@@ -4,12 +4,25 @@
 
 struct Chat_room {
   Chat_room(int port = 0, int socket = 0): port(port), master_socket(socket), active(true) {}
-  ~Chat_room() { /*delete sockets_mtx; */}
+  Chat_room(const Chat_room& other)
+    : port(other.port), master_socket(other.port), active(other.active.load()) {}
+  Chat_room& operator=(const Chat_room& other) {
+    port = other.port;
+    master_socket = other.master_socket;
+    active.store(other.active.load());
+    return *this;
+  }
 
   int port;
   int master_socket;
-  bool active;
+  std::atomic<bool> active;
   std::vector<int> sockets;
+
+  void lock() { sock_mtx.lock(); }
+  void unlock() { sock_mtx.unlock(); }
+
+private:
+  std::mutex sock_mtx;
 };
 
 void keep_client_alive(Chat_room& chat_room, int slave_socket);

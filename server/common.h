@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <map>
 #include <mutex>
+#include <atomic>
 
 #define MAX_SOCK_BACKLOG 100
 #define MAX_BUFFER_LEN 250
