@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 	  cout << "Trying to join the chat room on port: ";
           cout << "|" << port << "|" << endl;
           chatroom_port = stoi(port);
-	  cout << "There are currently " << user_count << " users in this chatroom." << endl;
+	  cout << "There are currently " << user_count << " other users in this chatroom." << endl;
 	  if(userName == "Anonymous")
 		userName += user_count;
           break; 

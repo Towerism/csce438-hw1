@@ -6,7 +6,8 @@
 struct Chat_room {
   Chat_room(int port = 0, int socket = 0): port(port), master_socket(socket), active(true) {}
   Chat_room(const Chat_room& other)
-    : port(other.port), master_socket(other.port), active(other.active.load()) {}
+    : port(other.port), master_socket(other.port),
+      active(other.active.load()), sockets(other.sockets) {}
   Chat_room& operator=(const Chat_room& other) {
     port = other.port;
     master_socket = other.master_socket;
@@ -18,6 +19,8 @@ struct Chat_room {
   int master_socket;
   std::atomic<bool> active;
   Socket_list sockets;
+
+private:
 };
 
 void connect_clients_to_chat_room(int master_socket, Chat_room& chat_room);
