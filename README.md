@@ -1,2 +1,2 @@
 # csce438-hw1
-CSCE 438 Homework 1
+A chat room server and client written for csce 438.
