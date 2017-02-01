@@ -12,6 +12,7 @@ struct Chat_room {
     port = other.port;
     master_socket = other.master_socket;
     active.store(other.active.load());
+    sockets = other.sockets;
     return *this;
   }
 
